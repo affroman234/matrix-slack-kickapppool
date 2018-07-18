@@ -39,23 +39,31 @@ function processEvent(event, callback) {
             if (err) {
                 console.error(err);
             }
-            // if (commandWords[1].includes('*')) {
-            // let filterParams = commandWords[1].replace(/\*/g, '');
-                /* let matches = {
+            if (commandWords[1].includes('*')) {
+            let filterParams = commandWords[1].replace(/\*/g, '');
+                let matches = {
                     servers: [],
                     pools: []
                 }
                 for (var itemIndex in data.Items) {
-                    matches.servers.push(data.Items[itemIndex].serverName.includes(filterParams));
-                        for (var poolIndex in item.appPools) {
-                            matches.pools.push(item.appPools[poolIndex].includes(filterParams));
+                    if (data.Items[itemIndex].serverName.includes(filterParams)) {
+                        matches.servers.push(data.Items[itemIndex].serverName);
+                    }
+                    for (var poolIndex in data.Items[itemIndex]) {
+                        if (data.Items[itemIndex].appPools[poolIndex].includes(filterParams)) {
+                            matches.pools.push(data.Items[itemIndex].appPools[poolIndex]);
+                        }
                     }
                 }
                 dbResponse = matches;
                 return;
-        } */
+        }
             dbResponse = data;
         })   
+    }
+
+    else {
+        callback(null, 'Please type a valid command.');
     }
     callback(null, dbResponse, resetdb);
 }
