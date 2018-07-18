@@ -49,7 +49,7 @@ function processEvent(event, callback) {
                     if (data.Items[itemIndex].serverName.includes(filterParams)) {
                         matches.servers.push(data.Items[itemIndex].serverName);
                     }
-                    for (var poolIndex in data.Items[itemIndex]) {
+                    for (var poolIndex in data.Items[itemIndex].appPools) {
                         if (data.Items[itemIndex].appPools[poolIndex].includes(filterParams)) {
                             matches.pools.push(data.Items[itemIndex].appPools[poolIndex]);
                         }
