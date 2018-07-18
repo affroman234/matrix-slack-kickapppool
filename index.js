@@ -41,20 +41,16 @@ function processEvent(event, callback) {
             }
             if (commandWords[1].includes('*')) {
                 let matches = {
-                    servers: [],
-                    pools: [],
+                    servers: [{}],
                     filterParams: ''
                 }
                 matches.filterParams = commandWords[1].replace(/\*/g, '');
 
+                var serverCount = 0;
                 for (var itemIndex in data.Items) {
-                    if (data.Items[itemIndex].serverName.includes(filterParams)) {
-                        matches.servers.push(data.Items[itemIndex].serverName);
-                    }
-                    for (var poolIndex in data.Items[itemIndex].appPools) {
-                        if (data.Items[itemIndex].appPools[poolIndex].includes(filterParams)) {
-                            matches.pools.push(data.Items[itemIndex].appPools[poolIndex]);
-                        }
+                    if (data.Items[itemIndex].serverName.includes(matches.filterParams)) {
+                        matches.servers[serverCount] = data.Items[itemIndex]
+                    serverCount++;
                     }
                 }
                 dbResponse = matches;
