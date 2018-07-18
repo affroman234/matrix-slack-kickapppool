@@ -40,11 +40,13 @@ function processEvent(event, callback) {
                 console.error(err);
             }
             if (commandWords[1].includes('*')) {
-            let filterParams = commandWords[1].replace(/\*/g, '');
                 let matches = {
                     servers: [],
-                    pools: []
+                    pools: [],
+                    filterParams: ''
                 }
+                matches.filterParams = commandWords[1].replace(/\*/g, '');
+
                 for (var itemIndex in data.Items) {
                     if (data.Items[itemIndex].serverName.includes(filterParams)) {
                         matches.servers.push(data.Items[itemIndex].serverName);
