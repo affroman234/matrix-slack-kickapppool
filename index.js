@@ -39,9 +39,9 @@ function processEvent(event, callback) {
             if (err) {
                 console.error(err);
             }
-            if (commandWords[1].includes('*')) {
-            let filterParams = commandWords[1].replace(/\*/g, '');
-                let matches = {
+            // if (commandWords[1].includes('*')) {
+            // let filterParams = commandWords[1].replace(/\*/g, '');
+                /* let matches = {
                     servers: [],
                     pools: []
                 }
@@ -53,8 +53,8 @@ function processEvent(event, callback) {
                 }
                 dbResponse = matches;
                 return;
-            }
-            // dbResponse = commandWords;
+        } */
+            dbResponse = commandWords;
         })   
     }
     callback(null, dbResponse, resetdb);
