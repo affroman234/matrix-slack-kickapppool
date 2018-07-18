@@ -5,12 +5,12 @@ const app = require('./app')
 const server = awsServerlessExpress.createServer(app)
 const AWS = require('aws-sdk');
 const qs = require('querystring');
+const SSH = require('simple-ssh');
 
 const kmsEncryptedToken = process.env.kmsEncryptedToken;
 let token;
 let dbResponse = [];
 var dynamoDB = new AWS.DynamoDB.DocumentClient();
-
 
 function processEvent(event, callback) {
     
@@ -25,9 +25,45 @@ function processEvent(event, callback) {
     let command = params.command;
     let channel = params.channel_name;
     let slackText = params.text;
-
-    callback(null, `Hello ${user} in ${channel}.`);
+    let commandWords = slackText.match(/\S+/g);
+    
+    var dbParams = {
+      TableName: 'serverTestList',
+      Key: {
+          serverName: ''
+      }
+    }
+    
+    if (commandWords[0] === 'listPools'){
+        dynamoDB.scan(dbParams, function(err, data) {
+            if (err) {
+                console.error(err);
+            }
+            if (commandWords[1].includes('*')) {
+            let filterParams = commandWords[1].replace(/\*/g, '');
+                let matches = {
+                    servers: [],
+                    pools: []
+                }
+                for (var itemIndex in data.Items) {
+                    matches.servers.push(data.Items[itemIndex].serverName.includes(filterParams));
+                        for (var poolIndex in item.appPools) {
+                            matches.pools.push(item.appPools[poolIndex].includes(filterParams));
+                    }
+                }
+                dbResponse = matches;
+                return;
+            }
+            // dbResponse = commandWords;
+        })   
+    }
+    callback(null, dbResponse, resetdb);
 }
+
+function resetdb () {
+    dbResponse = []; 
+}
+
 
 exports.handler = (event, context, callback) => {
     const done = (err, res) => callback(null, {
