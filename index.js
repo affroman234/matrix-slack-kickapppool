@@ -5,7 +5,6 @@ const app = require('./app')
 const server = awsServerlessExpress.createServer(app)
 const AWS = require('aws-sdk');
 const qs = require('querystring');
-const SSH = require('simple-ssh');
 
 const kmsEncryptedToken = process.env.kmsEncryptedToken;
 let token;
