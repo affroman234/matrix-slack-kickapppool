@@ -54,7 +54,7 @@ function processEvent(event, callback) {
                 dbResponse = matches;
                 return;
         } */
-            dbResponse = commandWords;
+            dbResponse = data;
         })   
     }
     callback(null, dbResponse, resetdb);
