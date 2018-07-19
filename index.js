@@ -74,7 +74,7 @@ async function processEvent(event, callback) {
                                     resolve();
                                     return;
                                 }
-                                if (appPoolIndex === matches.servers[serverIndex].appPools.length -1) {
+                                else if (appPoolIndex == (matches.servers[serverIndex].appPools.length-1)) {
                                     dbResponse += 'Please use a valid app pool name. To list pools write /kickapppool listPools.';
                                     resolve();
                                     return;
