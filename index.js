@@ -12,7 +12,10 @@ let token;
 let dbResponse = [];
 var dynamoDB = new AWS.DynamoDB.DocumentClient();
 
-function processEvent(event, callback) {
+async function processEvent(event, callback) {
+    
+    let dbResponse
+    var dynamoDB = new AWS.DynamoDB.DocumentClient();
     
     const params = qs.parse(event.body);
     const requestToken = params.token;
@@ -33,62 +36,70 @@ function processEvent(event, callback) {
           serverName: ''
       }
     }
-    
-    dynamoDB.scan(dbParams, function(err, data) { 
-        if (err) {
-            console.error(err);
-        }
-        let matches = {
-            servers: [{}],
-            filterParams: ''
-        }
-        if (commandWords[0] === 'listPools'){
-            if (commandWords[1].includes('*')) {
-                matches.filterParams = commandWords[1].replace(/\*/g, '');
-        
-                var serverCount = 0;
-                for (var itemIndex in data.Items) {
-                    if (data.Items[itemIndex].serverName.includes(matches.filterParams)) {
-                        matches.servers[serverCount] = data.Items[itemIndex]
-                    serverCount++;
-                    }
-                }
-                dbResponse = matches;
-                return;
+    let promise = new Promise((resolve, reject) => {
+        dynamoDB.scan(dbParams, function(err, data) { 
+            if (err) {
+                console.error(err);
             }
-        dbResponse = data;
-        }
-        else {
-            matches.servers = data.Items;
-            for (var serverIndex in matches.servers) {
-                if (commandWords[0] === matches.servers[serverIndex].serverName) {
-                    dbResponse = 'Server was found.'
-                    if (commandWords[1]) {
-                        for (var appPoolIndex in matches.servers[serverIndex].appPools) {
-                            if (commandWords[1] === matches.servers[serverIndex].appPools[appPoolIndex]) {
-                                dbResponse += ` Kicking ${commandWords[1]} in ${commandWords[0]}`;
-                                return
-                            }
+            let matches = {
+                servers: [{}],
+                filterParams: ''
+            }
+            if (commandWords[0] === 'listPools'){
+                if (commandWords[1].includes('*')) {
+                    matches.filterParams = commandWords[1].replace(/\*/g, '');
+            
+                    var serverCount = 0;
+                    for (var itemIndex in data.Items) {
+                        if (data.Items[itemIndex].serverName.includes(matches.filterParams)) {
+                            matches.servers[serverCount] = data.Items[itemIndex]
+                        serverCount++;
                         }
                     }
-                    else {
-                        dbResponse = 'Please include an app pool name as the second command. To list pools write /kickapppool listPools.'
-                    }
-                    return
+                    dbResponse = matches;
+                    resolve();
+                    return;
                 }
-                else {
-                    dbResponse = 'Server was not found.'
+            dbResponse = data;
+            }
+            else {
+                matches.servers = data.Items;
+                for (var serverIndex in matches.servers) {
+                    if (commandWords[0] === matches.servers[serverIndex].serverName) {
+                        dbResponse = 'Server was found.';
+                        if (commandWords[1]) {
+                            for (var appPoolIndex in matches.servers[serverIndex].appPools) {
+                                if (commandWords[1] === matches.servers[serverIndex].appPools[appPoolIndex]) {
+                                    dbResponse += ` Kicking ${commandWords[1]} in ${commandWords[0]}`;
+                                    resolve();
+                                    return;
+                                }
+                                if (appPoolIndex === matches.servers[serverIndex].appPools.length -1) {
+                                    dbResponse += 'Please use a valid app pool name. To list pools write /kickapppool listPools.';
+                                    resolve();
+                                    return;
+                                }
+                            }
+                        }
+                        else {
+                            dbResponse = 'Please include an app pool name as the second command. To list pools write /kickapppool listPools.';
+                            resolve();
+                        }
+                        return;
+                    }
+                    else {
+                        dbResponse = 'Server was not found.';
+                        resolve();
+                    }
                 }
             }
-        }
+        })
     })
-    callback(null, dbResponse, resetdb);
+    
+    let response = await promise;
+    
+    callback(null, dbResponse);
 }
-
-function resetdb () {
-    dbResponse = []; 
-}
-
 
 exports.handler = (event, context, callback) => {
     const done = (err, res) => callback(null, {
