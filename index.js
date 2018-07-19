@@ -34,18 +34,18 @@ function processEvent(event, callback) {
       }
     }
     
-    if (commandWords[0] === 'listPools'){
-        dynamoDB.scan(dbParams, function(err, data) {
-            if (err) {
-                console.error(err);
-            }
+    dynamoDB.scan(dbParams, function(err, data) { 
+        if (err) {
+            console.error(err);
+        }
+        let matches = {
+            servers: [{}],
+            filterParams: ''
+        }
+        if (commandWords[0] === 'listPools'){
             if (commandWords[1].includes('*')) {
-                let matches = {
-                    servers: [{}],
-                    filterParams: ''
-                }
                 matches.filterParams = commandWords[1].replace(/\*/g, '');
-
+        
                 var serverCount = 0;
                 for (var itemIndex in data.Items) {
                     if (data.Items[itemIndex].serverName.includes(matches.filterParams)) {
@@ -55,14 +55,33 @@ function processEvent(event, callback) {
                 }
                 dbResponse = matches;
                 return;
+            }
+        dbResponse = data;
         }
-            dbResponse = data;
-        })   
-    }
-
-    else {
-        callback(null, 'Please type a valid command.');
-    }
+        else {
+            matches.servers = data.Items;
+            for (var serverIndex in matches.servers) {
+                if (commandWords[0] === matches.servers[serverIndex].serverName) {
+                    dbResponse = 'Server was found.'
+                    if (commandWords[1]) {
+                        for (var appPoolIndex in matches.servers[serverIndex].appPools) {
+                            if (commandWords[1] === matches.servers[serverIndex].appPools[appPoolIndex]) {
+                                dbResponse += ` Kicking ${commandWords[1]} in ${commandWords[0]}`;
+                                return
+                            }
+                        }
+                    }
+                    else {
+                        dbResponse = 'Please include an app pool name as the second command. To list pools write /kickapppool listPools.'
+                    }
+                    return
+                }
+                else {
+                    dbResponse = 'Server was not found.'
+                }
+            }
+        }
+    })
     callback(null, dbResponse, resetdb);
 }
 
