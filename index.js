@@ -105,6 +105,7 @@ async function processEvent(event, callback) {
                     }
                 }
             }
+            resolve();
         })
     })
     
