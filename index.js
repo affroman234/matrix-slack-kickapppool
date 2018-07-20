@@ -11,7 +11,7 @@ const kmsEncryptedToken = process.env.kmsEncryptedToken;
 let token;
 let dbResponse = [];
 var dynamoDB = new AWS.DynamoDB.DocumentClient();
-let sshKey = proccess.env.sshKey;
+let sshKey = process.env.sshKey;
 
 async function processEvent(event, callback) {
     
