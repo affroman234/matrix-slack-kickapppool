@@ -96,66 +96,68 @@ async function processEvent(event, callback) {
                 servers: [{}],
                 filterParams: ''
             }
-            if (commandWords[0] === 'listPools'){
-                if (commandWords[1].includes('*')) {
-                    matches.filterParams = commandWords[1].replace(/\*/g, '');
-            
-                    var serverCount = 0;
-                    for (var itemIndex in data.Items) {
-                        if (data.Items[itemIndex].serverName.includes(matches.filterParams)) {
-                            matches.servers[serverCount] = data.Items[itemIndex]
-                        serverCount++;
-                        }
-                    }
-                    dbResponse = matches;
-                    resolve();
-                    return;
-                }
-            dbResponse = data;
-            }
-            else {
-                matches.servers = data.Items;
-                for (var serverIndex in matches.servers) {
-                    if (commandWords[0] === matches.servers[serverIndex].serverName) {
-                        dbResponse = 'Server was found.';
-                        if (commandWords[1]) {
-                            for (var appPoolIndex in matches.servers[serverIndex].appPools) {
-                                if (commandWords[1] === matches.servers[serverIndex].appPools[appPoolIndex]) {
-                                    dbResponse += ` Kicking ${commandWords[1]} in ${commandWords[0]}`;
-
-                                    var ssh = new SSH ({
-                                        key: sshKey
-                                    })
-                                    
-                                    ssh.exec('uptime', {
-                                        out: function(stdout) {
-                                            dbResponse += stdout;
-                                        }
-                                    }).start();
-
-                                    resolve();
-                                    return;
-                                }
-                                else if (appPoolIndex == (matches.servers[serverIndex].appPools.length-1)) {
-                                    dbResponse += 'Please use a valid app pool name. To list pools write /kickapppool listPools.';
-                                    resolve();
-                                    return;
-                                }
+            if (commandWords) {
+                if (commandWords[0] === 'listPools'){
+                    if (commandWords[1].includes('*')) {
+                        matches.filterParams = commandWords[1].replace(/\*/g, '');
+                
+                        var serverCount = 0;
+                        for (var itemIndex in data.Items) {
+                            if (data.Items[itemIndex].serverName.includes(matches.filterParams)) {
+                                matches.servers[serverCount] = data.Items[itemIndex]
+                            serverCount++;
                             }
                         }
-                        else {
-                            dbResponse = 'Please include an app pool name as the second command. To list pools write /kickapppool listPools.';
-                            resolve();
-                        }
+                        dbResponse = matches;
+                        resolve();
                         return;
                     }
-                    else {
-                        dbResponse = 'Server was not found.';
-                        resolve();
+                dbResponse = data;
+                }
+                else {
+                    matches.servers = data.Items;
+                    for (var serverIndex in matches.servers) {
+                        if (commandWords[0] === matches.servers[serverIndex].serverName) {
+                            dbResponse = 'Server was found.';
+                            if (commandWords[1]) {
+                                for (var appPoolIndex in matches.servers[serverIndex].appPools) {
+                                    if (commandWords[1] === matches.servers[serverIndex].appPools[appPoolIndex]) {
+                                        dbResponse += ` Kicking ${commandWords[1]} in ${commandWords[0]}`;
+    
+                                        var ssh = new SSH ({
+                                            key: sshKey
+                                        })
+                                        
+                                        ssh.exec('uptime', {
+                                            out: function(stdout) {
+                                                dbResponse += stdout;
+                                            }
+                                        }).start();
+    
+                                        resolve();
+                                        return;
+                                    }
+                                    else if (appPoolIndex == (matches.servers[serverIndex].appPools.length-1)) {
+                                        dbResponse += 'Please use a valid app pool name. To list pools write /kickapppool listPools.';
+                                        resolve();
+                                        return;
+                                    }
+                                }
+                            }
+                            else {
+                                dbResponse = 'Please include an app pool name as the second command. To list pools write /kickapppool listPools.';
+                                resolve();
+                            }
+                            return;
+                        }
+                        else {
+                            dbResponse = 'Server was not found.';
+                            resolve();
+                        }
                     }
                 }
+                resolve();
             }
-            resolve();
         })
     })
     
