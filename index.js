@@ -5,13 +5,12 @@ const app = require('./app')
 const server = awsServerlessExpress.createServer(app)
 const AWS = require('aws-sdk');
 const qs = require('querystring');
-const SSH = require('simple-ssh');
+const node_ssh = require('node-ssh');
 
 const kmsEncryptedToken = process.env.kmsEncryptedToken;
 let token;
 let dbResponse = [];
 var dynamoDB = new AWS.DynamoDB.DocumentClient();
-let sshKey = process.env.ssh;
 
 async function processEvent(event, callback) {
     
@@ -74,17 +73,16 @@ async function processEvent(event, callback) {
                                     if (commandWords[1] === matches.servers[serverIndex].appPools[appPoolIndex]) {
                                         dbResponse += ` Kicking ${commandWords[1]} in ${commandWords[0]}`;
                                         
-                                        console.log(process.env.ssh);
-                                        var ssh = new SSH ({
-                                            key: sshKey //key needs to be in column format
+                                        var ssh = new node_ssh ({
+                                            privateKey: '/slack-kickapppool/id_rsa' //key needs to be in column format
                                         })
                                         
-                                        ssh.exec('uptime', {
+                                        /* ssh.exec('uptime', {
                                             out: function(stdout) {
                                                 dbResponse += stdout;
                                             }
                                         }).start();
-    
+                                        */
                                         resolve();
                                         return; //only loop necessary amount of times
                                     }
