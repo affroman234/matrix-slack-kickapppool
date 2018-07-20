@@ -73,16 +73,17 @@ async function processEvent(event, callback) {
                                     if (commandWords[1] === matches.servers[serverIndex].appPools[appPoolIndex]) {
                                         dbResponse += ` Kicking ${commandWords[1]} in ${commandWords[0]}`;
                                         
-                                        var ssh = new node_ssh ({
-                                            privateKey: '/slack-kickapppool/id_rsa' //key needs to be in column format
+                                        var ssh = new node_ssh ()
+                                        ssh.connect({
+                                            privateKey: 'id_rsa'
+                                        }).then(function() {
+                                            ssh.exec('uptime', {
+                                                out: function(stdout) {
+                                                    dbResponse += stdout;
+                                                }
+                                            })
                                         })
-                                        
-                                        /* ssh.exec('uptime', {
-                                            out: function(stdout) {
-                                                dbResponse += stdout;
-                                            }
-                                        }).start();
-                                        */
+
                                         resolve();
                                         return; //only loop necessary amount of times
                                     }
