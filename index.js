@@ -73,9 +73,10 @@ async function processEvent(event, callback) {
                                     if (commandWords[1] === matches.servers[serverIndex].appPools[appPoolIndex]) {
                                         dbResponse += ` Kicking ${commandWords[1]} in ${commandWords[0]}`;
                                         
-                                        var sshPromise = new Promise((resolve,reject) => {
                                             var ssh = new node_ssh ()
                                             ssh.connect({
+                                                host: 'ubuntu@ec2-18-191-109-135.us-east-2.compute.amazonaws.com',
+                                                username: 'ubuntu',
                                                 privateKey: 'id_rsa'
                                             }).then(function() {
                                                 ssh.exec('uptime', {
@@ -84,8 +85,6 @@ async function processEvent(event, callback) {
                                                     }
                                                 })
                                             })
-                                        })
-                                        let results = await sshPromise;
                                         resolve();
                                         return; //only loop necessary amount of times
                                     }
