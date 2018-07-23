@@ -75,7 +75,7 @@ async function processEvent(event, callback) {
                                         
                                             var ssh = new node_ssh ()
                                             ssh.connect({
-                                                host: 'ubuntu@ec2-18-191-109-135.us-east-2.compute.amazonaws.com',
+                                                host: '18.191.109.135',
                                                 username: 'ubuntu',
                                                 privateKey: 'id_rsa'
                                             }).then(function() {
@@ -84,6 +84,8 @@ async function processEvent(event, callback) {
                                                         dbResponse += stdout;
                                                     }
                                                 })
+                                            }).catch(function(err) {
+                                                console.error(err);
                                             })
                                         resolve();
                                         return; //only loop necessary amount of times
