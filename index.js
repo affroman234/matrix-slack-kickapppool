@@ -76,22 +76,13 @@ async function processEvent(event, callback) {
                                             var ssh = new SSH ({
                                                 host: '18.191.109.135',
                                                 username: 'ubuntu',
-                                                privateKey: 'id_rsa'
+                                                key: 'id_rsa'
                                             })
-                                            ssh.connect({
-                                            }).then(function() {
-                                                ssh.exec('hh_client', ['--json'], {
-                                                    cwd: '/var/www',
-                                                    onStdout(chunk) {
-                                                      console.log('stdoutChunk', chunk.toString('utf8'))
-                                                    },
-                                                    onStderr(chunk) {
-                                                      console.log('stderrChunk', chunk.toString('utf8'))
-                                                    },
-                                                  })
-                                            }).catch(function(err) {
-                                                console.error(err);
-                                            })
+                                            ssh.exec('echo $PATH', {
+                                                out: function(stdout) {
+                                                    console.log(stdout);
+                                                }
+                                            }).start();
                                         resolve();
                                         return; //only loop necessary amount of times
                                     }
