@@ -5,7 +5,7 @@ const app = require('./app')
 const server = awsServerlessExpress.createServer(app)
 const AWS = require('aws-sdk');
 const qs = require('querystring');
-const node_ssh = require('node-ssh');
+const SSH = require('simple-ssh');
 
 const kmsEncryptedToken = process.env.kmsEncryptedToken;
 let token;
@@ -73,11 +73,12 @@ async function processEvent(event, callback) {
                                     if (commandWords[1] === matches.servers[serverIndex].appPools[appPoolIndex]) {
                                         dbResponse += ` Kicking ${commandWords[1]} in ${commandWords[0]}`;
                                         
-                                            var ssh = new node_ssh ()
-                                            ssh.connect({
+                                            var ssh = new SSH ({
                                                 host: '18.191.109.135',
                                                 username: 'ubuntu',
                                                 privateKey: 'id_rsa'
+                                            })
+                                            ssh.connect({
                                             }).then(function() {
                                                 ssh.exec('hh_client', ['--json'], {
                                                     cwd: '/var/www',
