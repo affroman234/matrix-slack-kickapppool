@@ -5,7 +5,7 @@ const app = require('./app')
 const server = awsServerlessExpress.createServer(app)
 const AWS = require('aws-sdk');
 const qs = require('querystring');
-const SSH = require('simple-ssh');
+const node_ssh = require('node-ssh');
 
 const kmsEncryptedToken = process.env.kmsEncryptedToken;
 let token;
@@ -73,16 +73,23 @@ async function processEvent(event, callback) {
                                     if (commandWords[1] === matches.servers[serverIndex].appPools[appPoolIndex]) {
                                         dbResponse += ` Kicking ${commandWords[1]} in ${commandWords[0]}`;
                                         
-                                            var ssh = new SSH ({
+                                            var ssh = new node_ssh ()
+                                            ssh.connect({
                                                 host: '18.191.109.135',
                                                 username: 'ubuntu',
-                                                key: 'id_rsa'
+                                                privateKey: 'id_rsa'
+                                            }).then(function() {
+                                                ssh.exec('echo $PATH', ['--json'], {
+                                                    onStdout(chunk) {
+                                                      console.log('stdoutChunk', chunk.toString('utf8'))
+                                                    },
+                                                    onStderr(chunk) {
+                                                      console.log('stderrChunk', chunk.toString('utf8'))
+                                                    },
+                                                  })
+                                            }).catch(function(err) {
+                                                console.error(err);
                                             })
-                                            ssh.exec('echo $PATH', {
-                                                out: function(stdout) {
-                                                    console.log(stdout);
-                                                }
-                                            }).start();
                                         resolve();
                                         return; //only loop necessary amount of times
                                     }
