@@ -12,11 +12,6 @@ let token;
 let dbResponse = [];
 var dynamoDB = new AWS.DynamoDB.DocumentClient();
 
-var logData = {
-    "channel": "#devs",
-    "username": "AWS",
-
-}
 
 async function processEvent(event, callback) {
     
