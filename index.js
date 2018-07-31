@@ -12,6 +12,12 @@ let token;
 let dbResponse = [];
 var dynamoDB = new AWS.DynamoDB.DocumentClient();
 
+var logData = {
+    "channel": "#devs",
+    "username": "AWS",
+
+}
+
 async function processEvent(event, callback) {
     
     let dbResponse = 'Welcome to the Slack-AWS integration.'
@@ -29,6 +35,10 @@ async function processEvent(event, callback) {
     let channel = params.channel_name;
     let slackText = params.text;
     let commandWords = slackText.match(/\S+/g);
+
+    if(channel.name !== '#Devs') {
+        callback('Please only use this command in the #Devs channel.')
+    }
     
     var dbParams = {
       TableName: 'serverTestList',
