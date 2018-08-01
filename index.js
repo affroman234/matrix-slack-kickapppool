@@ -42,6 +42,7 @@ async function processEvent(event, callback) {
       }
     }
     let promise = new Promise((resolve, reject) => { //use promise because scan is async and lambda will never output otherwise
+        let _this = this;
         dynamoDB.scan(dbParams, function(err, data) { 
             if (err) {
                 console.error(err);
@@ -52,23 +53,24 @@ async function processEvent(event, callback) {
             }
             if (commandWords) {
                 if (commandWords[0] === 'listPools'){
-                    if (commandWords[1].includes('*')) {
-                        matches.filterParams = commandWords[1].replace(/\*/g, '');
-                
-                        var serverCount = 0;
-                        for (var itemIndex in data.Items) {
-                            if (data.Items[itemIndex].serverName.includes(matches.filterParams)) {
-                                matches.servers[serverCount] = data.Items[itemIndex]
-                            serverCount++;
+                    if(commandWords[1]) {
+                        if (commandWords[1].includes('*')) {
+                            matches.filterParams = commandWords[1].replace(/\*/g, '');
+                            var serverCount = 0;
+                            for (var itemIndex in data.Items) {
+                                if (data.Items[itemIndex].serverName.includes(matches.filterParams)) {
+                                    matches.servers[serverCount] = data.Items[itemIndex]
+                                serverCount++;
+                                }
                             }
+                            dbResponse = matches;
+                            resolve();
+                            return;
                         }
-                        dbResponse = matches;
-                        resolve();
-                        return;
                     }
                 dbResponse = data;
                 }
-                else if (commandWords[1]) {
+                else {
                     matches.servers = data.Items; //keep a local store of the items to reference for kicking commands
                     for (var serverIndex in matches.servers) {
                         if (commandWords[0] === matches.servers[serverIndex].serverName) {
@@ -87,12 +89,12 @@ async function processEvent(event, callback) {
                                                 ssh.exec('echo $PATH', ['--json'], {
                                                     onStdout(chunk) {
                                                       console.log('stdoutChunk', chunk.toString('utf8'))
-                                                      resolve();
+                                                      _this.resolve();
                                                       return;
                                                     },
                                                     onStderr(chunk) {
                                                       console.log('stderrChunk', chunk.toString('utf8'))
-                                                      resolve();
+                                                      _this.resolve();
                                                       return;
                                                     },
                                                   })
@@ -122,9 +124,6 @@ async function processEvent(event, callback) {
                     }
                 }
                 resolve();
-            }
-            else {
-                dbResponse = 'Please use the *+server name parameters in your command.'
             }
         })
     })
