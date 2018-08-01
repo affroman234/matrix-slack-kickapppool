@@ -53,21 +53,27 @@ async function processEvent(event, callback) {
             }
             if (commandWords) {
                 if (commandWords[0] === 'listPools'){
-                    if(commandWords.length > 1) {
-                        if (commandWords[1].includes('*')) {
-                            matches.filterParams = commandWords[1].replace(/\*/g, '');
-                            var serverCount = 0;
-                            for (var itemIndex in data.Items) {
-                                if (data.Items[itemIndex].serverName.includes(matches.filterParams)) {
-                                    matches.servers[serverCount] = data.Items[itemIndex]
-                                serverCount++;
+                    try {
+                        if(commandWords.length > 1) {
+                            if (commandWords[1].includes('*')) {
+                                matches.filterParams = commandWords[1].replace(/\*/g, '');
+                                var serverCount = 0;
+                                for (var itemIndex in data.Items) {
+                                    if (data.Items[itemIndex].serverName.includes(matches.filterParams)) {
+                                        matches.servers[serverCount] = data.Items[itemIndex]
+                                    serverCount++;
+                                    }
                                 }
+                                dbResponse = matches;
+                                resolve();
+                                return;
                             }
-                            dbResponse = matches;
-                            resolve();
-                            return;
                         }
                     }
+                    catch (error) {
+                        console.error(error);
+                    }
+                    
                 dbResponse = data;
                 }
                 else {
@@ -100,6 +106,7 @@ async function processEvent(event, callback) {
                                                   })
                                             }).catch(function(err) {
                                                 console.error(err);
+                                                return;
                                             }).then(resolve())
                                         return; //only loop necessary amount of times
                                     }
