@@ -31,7 +31,7 @@ async function processEvent(event, callback) {
     let slackText = params.text;
     let commandWords = slackText.match(/\S+/g);
 
-    if(channel.name !== '#Devs') {
+    if(channel !== '#Devs') {
         callback('Please only use this command in the #Devs channel.')
     }
     
@@ -68,7 +68,7 @@ async function processEvent(event, callback) {
                     }
                 dbResponse = data;
                 }
-                else {
+                else if (commandWords[1]) {
                     matches.servers = data.Items; //keep a local store of the items to reference for kicking commands
                     for (var serverIndex in matches.servers) {
                         if (commandWords[0] === matches.servers[serverIndex].serverName) {
@@ -87,9 +87,13 @@ async function processEvent(event, callback) {
                                                 ssh.exec('echo $PATH', ['--json'], {
                                                     onStdout(chunk) {
                                                       console.log('stdoutChunk', chunk.toString('utf8'))
+                                                      resolve();
+                                                      return;
                                                     },
                                                     onStderr(chunk) {
                                                       console.log('stderrChunk', chunk.toString('utf8'))
+                                                      resolve();
+                                                      return;
                                                     },
                                                   })
                                             }).catch(function(err) {
@@ -118,6 +122,9 @@ async function processEvent(event, callback) {
                     }
                 }
                 resolve();
+            }
+            else {
+                dbResponse = 'Please use the *+server name parameters in your command.'
             }
         })
     })
