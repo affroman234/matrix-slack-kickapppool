@@ -53,7 +53,7 @@ async function processEvent(event, callback) {
             }
             if (commandWords) {
                 if (commandWords[0] === 'listPools'){
-                    if(commandWords[1]) {
+                    if(commandWords.length > 1) {
                         if (commandWords[1].includes('*')) {
                             matches.filterParams = commandWords[1].replace(/\*/g, '');
                             var serverCount = 0;
@@ -89,19 +89,18 @@ async function processEvent(event, callback) {
                                                 ssh.exec('echo $PATH', ['--json'], {
                                                     onStdout(chunk) {
                                                       console.log('stdoutChunk', chunk.toString('utf8'))
-                                                      _this.resolve();
+                                                      resolve();
                                                       return;
                                                     },
                                                     onStderr(chunk) {
                                                       console.log('stderrChunk', chunk.toString('utf8'))
-                                                      _this.resolve();
+                                                      resolve();
                                                       return;
                                                     },
                                                   })
                                             }).catch(function(err) {
                                                 console.error(err);
-                                            })
-                                        resolve();
+                                            }).then(resolve())
                                         return; //only loop necessary amount of times
                                     }
                                     else if (appPoolIndex == (matches.servers[serverIndex].appPools.length-1)) {
