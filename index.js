@@ -6,6 +6,7 @@ const server = awsServerlessExpress.createServer(app)
 const AWS = require('aws-sdk');
 const qs = require('querystring');
 const node_ssh = require('node-ssh');
+const https = require('https');
 
 const kmsEncryptedToken = process.env.kmsEncryptedToken;
 let token;
@@ -14,6 +15,8 @@ var dynamoDB = new AWS.DynamoDB.DocumentClient();
 
 
 async function processEvent(event, callback) {
+    
+    console.log(event);
     
     let dbResponse = 'Welcome to the Slack-AWS integration.'
     var dynamoDB = new AWS.DynamoDB.DocumentClient();
@@ -25,9 +28,13 @@ async function processEvent(event, callback) {
         return callback('Invalid request token');
     }
 
-    let user = params.user_name;
-    let command = params.command;
-    let channel = params.channel_name;
+    var message = event.Records[0].Sns.Message;
+    const parsedMsg = JSON.parse(message);
+    const params = qs.parse(parsedMsg.body);
+    console.log(params);
+    const requestToken = params.token;
+    const responseURL = params.response_url;
+
     let slackText = params.text;
     let commandWords = slackText.match(/\S+/g);
 
@@ -41,6 +48,9 @@ async function processEvent(event, callback) {
           serverName: ''
       }
     }
+
+    let post1 = await httpsPost(responseURL, `${params.user_name} is attempting to kick the app pool.`);
+
     let promise = new Promise((resolve, reject) => { //use promise because scan is async and lambda will never output otherwise
         let _this = this;
         dynamoDB.scan(dbParams, function(err, data) { 
@@ -65,7 +75,7 @@ async function processEvent(event, callback) {
                                     }
                                 }
                                 dbResponse = matches;
-                                resolve();
+                                resolve(dbResponse);
                                 return;
                             }
                         }
@@ -95,74 +105,115 @@ async function processEvent(event, callback) {
                                                 ssh.exec('echo $PATH', ['--json'], {
                                                     onStdout(chunk) {
                                                       console.log('stdoutChunk', chunk.toString('utf8'))
-                                                      resolve();
+                                                      resolve(dbResponse);
                                                       return;
                                                     },
                                                     onStderr(chunk) {
                                                       console.log('stderrChunk', chunk.toString('utf8'))
-                                                      resolve();
+                                                      resolve(dbResponse);
                                                       return;
                                                     },
                                                   })
                                             }).catch(function(err) {
                                                 console.error(err);
                                                 return;
-                                            }).then(resolve())
+                                            }).then(resolve(dbResponse))
                                         return; //only loop necessary amount of times
                                     }
                                     else if (appPoolIndex == (matches.servers[serverIndex].appPools.length-1)) {
                                         dbResponse += 'Please use a valid app pool name. To list pools write /kickapppool listPools.';
-                                        resolve();
+                                        resolve(dbResponse);
                                         return;
                                     }
                                 }
                             }
                             else {
                                 dbResponse = 'Please include an app pool name as the second command. To list pools write /kickapppool listPools.';
-                                resolve();
+                                resolve(dbResponse);
                             }
                             return;
                         }
                         else {
                             dbResponse = 'Server was not found.';
-                            resolve();
+                            resolve(dbResponse);
                         }
                     }
                 }
-                resolve();
+                resolve(dbResponse);
             }
         })
+    }).then((dbResponse) => {
+        return httpsPost(responseURL, dbResponse);
+    }).then(() => {
+        console.log('Finished all.')
     })
     
     let response = await promise;
+}
+
+async function httpsPost(url, message) {
     
-    callback(null, dbResponse);
+    let promise = new Promise((resolve, reject) => {
+        
+        /* let urlNew = url.substr(8,15);
+        console.log('url: ' + urlNew)
+        
+        let pathNew = url.substr(23,70);
+        console.log('path: ' + pathNew) */
+
+        // use those ^^ if you want to always respond to the person who sent the message. the same channel
+
+        console.log('message: ' + message)
+        
+        var postData = JSON.stringify({
+            "text": message
+        });
+        var options = {
+                host: 'hooks.slack.com',
+                path: '/services/T0P79CK26/BC3LPHTFU/GZiyQG5qMZqCMgTOg7scMJ1l', //slack webhook endpoint for specific channel
+                method: 'POST',
+                // ciphers: 'DES-CBC3-SHA',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(postData)
+                }
+            }
+        var req = https.request(options, (res) => {
+          console.log('statusCode:', res.statusCode);
+          console.log('headers:', res.headers);
+        
+          res.on('data', (d) => {
+            process.stdout.write(d);
+            resolve();
+          });
+        });
+        
+        req.on('error', (e) => {
+          console.error(e);
+          reject();
+        });
+        
+        req.write(postData);
+        req.end(); 
+    }).then(() => {
+        console.log('Finished.');
+    });
+    
+    return promise;
 }
 
 exports.handler = (event, context, callback) => {
-    const done = (err, res) => callback(null, {
-        statusCode: err ? '400' : '200',
-        body: err ? (err.message || err) : JSON.stringify(res, null, "\t"), //format response with tabs
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
-    if (token) {
-        // Container reuse, simply process the event with the key in memory
-        processEvent(event, done);
-    } else if (kmsEncryptedToken && kmsEncryptedToken !== '<kmsEncryptedToken>') {
-        const cipherText = { CiphertextBlob: new Buffer(kmsEncryptedToken, 'base64') };
-        const kms = new AWS.KMS();
-        kms.decrypt(cipherText, (err, data) => {
-            if (err) {
-                console.log('Decrypt error:', err);
-                return done(err);
-            }
-            token = data.Plaintext.toString('ascii');
-            processEvent(event, done);
-        });
-    } else {
-        done('Token has not been set.');
-    }
+    var ddb = new AWS.DynamoDB({params: {TableName: 'snslambda'}});
+    var SnsMessageId = event.Records[0].Sns.MessageId;
+      var SnsPublishTime = event.Records[0].Sns.Timestamp;
+      var SnsTopicArn = event.Records[0].Sns.TopicArn;
+      var LambdaReceiveTime = new Date().toString();
+      var itemParams = {Item: {SnsTopicArn: {S: SnsTopicArn},
+      SnsPublishTime: {S: SnsPublishTime}, SnsMessageId: {S: SnsMessageId},
+      LambdaReceiveTime: {S: LambdaReceiveTime}  }};
+      /* ddb.putItem(itemParams, function() {
+        context.done(null,'');
+      }); */ 
+      
+    processEvent(event);
 };
